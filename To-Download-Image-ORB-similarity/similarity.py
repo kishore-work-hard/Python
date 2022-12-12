@@ -1,9 +1,10 @@
-
 import os, time
 import cv2
 
-img_count = 1
-
+img_count_c = 1
+img_count_d = 1
+img_count_e = 5
+img_count_f = 1
 
 # Works well with images of different dimensions
 def orb_sim(img1, img2):
@@ -21,10 +22,10 @@ def orb_sim(img1, img2):
 while True:
     flag = 0
 
-    p_frame_c = cv2.imread("./live/cam_c_" + str(img_count - 1) + ".jpg", 0)
-    p_frame_d = cv2.imread("./live/cam_d_" + str(img_count - 1) + ".jpg", 0)
-    p_frame_e = cv2.imread("./live/cam_e_" + str(img_count - 1) + ".jpg", 0)
-    # p_frame_f = cv2.imread("./live/cam_f_" + str(img_count - 1) + ".jpg", 0)
+    p_frame_c = cv2.imread("./live/cam_c_" + str(img_count_c - 1) + ".jpg", 0)
+    p_frame_d = cv2.imread("./live/cam_d_" + str(img_count_d - 1) + ".jpg", 0)
+    p_frame_e = cv2.imread("./live/cam_e_" + str(img_count_e - 1) + ".jpg", 0)
+    # p_frame_f = cv2.imread("./live/cam_f_" + str(img_count_f - 1) + ".jpg", 0)
 
     cam_c = cv2.VideoCapture(0)
     cam_d = cv2.VideoCapture(1)
@@ -46,25 +47,27 @@ while True:
     print("Similarity e using ORB is: ", orb_similarity_e)
     # print("Similarity f using ORB is: ", orb_similarity_f)
     print("")
-    if orb_similarity_c < 0.50:
-        cv2.imwrite("./live/cam_c_" + str(img_count) + ".jpg", frame_c)
-        flag = 1
-    if orb_similarity_d < 0.50:
-        cv2.imwrite("./live/cam_d_" + str(img_count) + ".jpg", frame_d)
-        flag = 1
-    if orb_similarity_e < 0.50:
-        cv2.imwrite("./live/cam_e_" + str(img_count) + ".jpg", frame_e)
-        flag = 1
-    # if orb_similarity_f < 0.50:
-    #     cv2.imwrite("./live/cam_f_" + str(img_count) + ".jpg", frame_f)
-    #     flag = 1
+
+    confidence = 0.85
+    if orb_similarity_c < confidence and orb_similarity_c != 0:
+        cv2.imwrite("./live/cam_c_" + str(img_count_c) + ".jpg", frame_c)
+        print("c- ", img_count_c)
+        img_count_c += 1
+    if orb_similarity_d < confidence and orb_similarity_d != 0:
+        cv2.imwrite("./live/cam_d_" + str(img_count_d) + ".jpg", frame_d)
+        print("d- ", img_count_d)
+        img_count_d += 1
+    if orb_similarity_e < confidence and orb_similarity_e != 0:
+        cv2.imwrite("./live/cam_e_" + str(img_count_e) + ".jpg", frame_e)
+        print("e- ", img_count_e)
+        img_count_e += 1
+    # if orb_similarity_f < confidence and orb_similarity_f != 0:
+    #     cv2.imwrite("./live/cam_f_" + str(img_count_f) + ".jpg", frame_f)
+    # print("f- ", img_count_f)
+    # img_count_f += 1
 
     # t = time.time()
     # time.sleep(600)
     # t1 = time.time() - t
     # print('{}ms : '.format(int(t1 * 1000)))
-
-    if flag == 1:
-        print(img_count)
-        img_count += 1
-        time.sleep(600)
+    time.sleep(5)
