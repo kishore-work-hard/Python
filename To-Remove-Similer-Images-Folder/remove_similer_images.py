@@ -1,6 +1,9 @@
 import cv2
 import os
-
+import imagehash
+from PIL import Image
+from multiprocessing import Pool, Manager
+from functools import partial
 
 def orb_sim(img1, img2):
     orb = cv2.ORB_create()
@@ -13,40 +16,59 @@ def orb_sim(img1, img2):
         return 0
     return len(similar_regions) / len(matches)
 
+def calculate_image_hash(img):
+    pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    return str(imagehash.dhash(pil_img))
 
-folder_path = './data'  # Replace with the actual folder path
+def process_image(img_path, shared_dict):
+    img = cv2.imread(img_path)
+    is_similar = False
+    img_hash = calculate_image_hash(img)
 
-unique_images = []
+    for unique_hash, unique_img in shared_dict.items():
+        similarity = orb_sim(img, unique_img)
+        if similarity >= 0.85:
 
-# Step 1: Find unique images
-for filename in os.listdir(folder_path):
-    if filename.endswith(('.jpg', '.jpeg', '.png')):
-        img_path = os.path.join(folder_path, filename)
-        img = cv2.imread(img_path, 0)
-
-        is_similar = False
-        img_hash = hash(img.tobytes())  # Convert image array to a hashable representation
-
-        for unique_img in unique_images:
-            unique_img_hash = hash(unique_img.tobytes())
-            similarity = orb_sim(img, unique_img)
-            print(similarity)
-            if similarity >= 0.85 :
-                print("True")
-                is_similar = True
-                break
-
-        if not is_similar:
-            unique_images.append(img)
-
-# Step 2: Remove similar images
-for filename in os.listdir(folder_path):
-    if filename.endswith(('.jpg', '.jpeg', '.png')):
-        img_path = os.path.join(folder_path, filename)
-        img = cv2.imread(img_path, 0)
-
-        img_hash = hash(img.tobytes())  # Convert image array to a hashable representation
-
-        if img_hash not in [hash(unique_img.tobytes()) for unique_img in unique_images]:
+            print("DEL-",img_path, "SIM-", similarity)
+            is_similar = True
             os.remove(img_path)
-            print(f"Removed similar image: {filename}")
+            txt_file_path = os.path.splitext(img_path)[0] + '.txt'
+            if os.path.exists(txt_file_path):
+                os.remove(txt_file_path)
+            break
+
+    if not is_similar:
+        shared_dict[img_hash] = img
+    return img_path
+
+def remove_image_and_txt(img_path):
+    try:
+        os.remove(img_path)
+        txt_file = os.path.splitext(img_path)[0] + ".txt"
+        if os.path.exists(txt_file):
+            os.remove(txt_file)
+            print(f"Removed similar image: {os.path.basename(img_path)} and its associated .txt file")
+        else:
+            print(f"Removed similar image: {os.path.basename(img_path)}")
+    except Exception as e:
+        print(f"Error while removing image: {os.path.basename(img_path)} - {str(e)}")
+
+if __name__ == '__main__':
+    folder_path = '3-DONE'  # Replace with the actual folder path
+    manager = Manager()
+    unique_images = manager.dict()
+
+    image_paths = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(('.jpg', '.jpeg', '.png'))]
+
+    # Create a partial function with shared_dict as a fixed argument
+    partial_process_image = partial(process_image, shared_dict=unique_images)
+
+    # Parallel processing
+    with Pool(processes=None) as pool:
+        processed_image_paths = pool.map(partial_process_image, image_paths)
+
+
+
+
+
+
